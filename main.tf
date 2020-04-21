@@ -18,3 +18,14 @@ resource "digitalocean_droplet" "web" {
   ]
   user_data = file("${path.module}/files/user-data.sh")
 }
+
+resource "digitalocean_domain" "domain" {
+  name = "simple-coding.co.uk"
+}
+
+resource "digitalocean_record" "main" {
+  domain = digitalocean_domain.domain.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.web.ipv4_address
+}

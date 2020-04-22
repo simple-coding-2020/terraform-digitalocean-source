@@ -7,8 +7,9 @@ resource "digitalocean_ssh_key" "web" {
 }
 
 resource "digitalocean_droplet" "web" {
+  count              = 2
   image              = "ubuntu-19-10-x64"
-  name               = "testing"
+  name               = "web-${count.index}"
   region             = "lon1"
   size               = "s-1vcpu-1gb"
   monitoring         = true
@@ -27,5 +28,5 @@ resource "digitalocean_record" "main" {
   domain = digitalocean_domain.domain.name
   type   = "A"
   name   = "@"
-  value  = digitalocean_droplet.web.ipv4_address
+  value  = digitalocean_droplet.web.0.ipv4_address
 }

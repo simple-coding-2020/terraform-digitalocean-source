@@ -20,6 +20,12 @@ resource "digitalocean_droplet" "web" {
   user_data = file("${path.module}/files/user-data.sh")
 }
 
+resource "digitalocean_certificate" "web" {
+  name    = "web-certificate"
+  type    = "lets_encrypt"
+  domains = ["simple-coding.co.uk"]
+}
+
 resource "digitalocean_loadbalancer" "web" {
   name   = "web-lb"
   region = "lon1"
@@ -32,13 +38,24 @@ resource "digitalocean_loadbalancer" "web" {
     target_protocol = "http"
   }
 
+  forwarding_rule {
+    entry_port     = 443
+    entry_protocol = "https"
+
+    target_port     = 8080
+    target_protocol = "http"
+
+    certificate_id = digitalocean_certificate.web.id
+  }
+
   healthcheck {
     port     = 8080
     protocol = "http"
     path     = "/"
   }
 
-  droplet_ids = digitalocean_droplet.web.*.id
+  redirect_http_to_https = true
+  droplet_ids            = digitalocean_droplet.web.*.id
 }
 
 resource "digitalocean_domain" "domain" {

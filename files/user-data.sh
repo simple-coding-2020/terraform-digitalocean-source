@@ -10,4 +10,13 @@ npm install pm2 -g
 git clone https://github.com/simple-coding-2020/terraform-digitalocean-app app
 cd app
 npm install
+
+cat > .env <<- "EOF"
+DB_HOST=${host}
+DB_USER=${user}
+DB_PASSWORD=${password}
+DB_DATABASE=${database}
+DB_PORT=${port}
+EOF
+
 pm2 start index.js

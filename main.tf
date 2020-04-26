@@ -6,6 +6,34 @@ resource "digitalocean_ssh_key" "web" {
   public_key = file("${path.module}/files/id_rsa.pub")
 }
 
+resource "digitalocean_database_cluster" "db" {
+  name       = "web-db"
+  engine     = "mysql"
+  version    = "8"
+  size       = "db-s-1vcpu-1gb"
+  region     = "lon1"
+  node_count = 1
+}
+
+resource "digitalocean_database_firewall" "db-fw" {
+  cluster_id = digitalocean_database_cluster.db.id
+
+  rule {
+    type  = "tag"
+    value = digitalocean_tag.web.id
+  }
+}
+
+resource "digitalocean_database_user" "db-user" {
+  cluster_id        = digitalocean_database_cluster.db.id
+  name              = "web-user"
+  mysql_auth_plugin = "mysql_native_password"
+}
+
+resource "digitalocean_tag" "web" {
+  name = "web-app"
+}
+
 resource "digitalocean_droplet" "web" {
   count              = 2
   image              = "ubuntu-19-10-x64"
@@ -17,7 +45,14 @@ resource "digitalocean_droplet" "web" {
   ssh_keys = [
     digitalocean_ssh_key.web.id
   ]
-  user_data = file("${path.module}/files/user-data.sh")
+  user_data = templatefile("${path.module}/files/user-data.sh", {
+    host     = digitalocean_database_cluster.db.private_host,
+    user     = "web-user",
+    database = digitalocean_database_cluster.db.database,
+    password = digitalocean_database_user.db-user.password,
+    port     = digitalocean_database_cluster.db.port
+  })
+  tags = [digitalocean_tag.web.id]
 }
 
 resource "digitalocean_certificate" "web" {
